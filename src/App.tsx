@@ -1,13 +1,8 @@
+import { getRoutineKind } from './lib/routine';
 import styles from './App.module.css';
 
-// Placeholder: real routine/logical-day logic will live in src/lib.
-function isMorning(now: Date): boolean {
-  const hour = now.getHours();
-  return hour >= 6 && hour < 18;
-}
-
 export default function App() {
-  const title = isMorning(new Date()) ? 'Утро' : 'Вечер';
+  const title = getRoutineKind(new Date()) === 'morning' ? 'Утро' : 'Вечер';
 
   return (
     <main className={styles.page}>
