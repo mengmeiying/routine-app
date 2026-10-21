@@ -43,3 +43,14 @@ export function saveProgress(date: string, progress: DayProgress): void {
     // Write failures (quota, private mode) must not break the UI.
   }
 }
+
+// Asks the browser not to evict our data under storage pressure.
+export async function requestPersistentStorage(): Promise<boolean> {
+  try {
+    if (!navigator.storage?.persist) return false;
+    if (await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  } catch {
+    return false;
+  }
+}
