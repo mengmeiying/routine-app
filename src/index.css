@@ -1,0 +1,32 @@
+:root {
+  --bg: #f1ede0;
+  --text: #1c2622;
+  --text-muted: #55615a;
+  --accent: #1f3d36;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14201c;
+    --text: #ece8da;
+    --text-muted: #a3ada5;
+    --accent: #d9c27a;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
