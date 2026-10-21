@@ -1,17 +1,23 @@
 :root {
-  --bg: #f1ede0;
-  --text: #1c2622;
-  --text-muted: #55615a;
-  --accent: #1f3d36;
+  --bg: #e8e8e8;
+  --surface: #c1c6c9;
+  --text: #271f14;
+  --text-muted: #583e24;
+  --accent: #ac2724;
+  --on-accent: #e8e8e8;
+  --heading: #3e4524;
   color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #14201c;
-    --text: #ece8da;
-    --text-muted: #a3ada5;
-    --accent: #d9c27a;
+    --bg: #1c2010;
+    --surface: #2b3119;
+    --text: #e8e8e8;
+    --text-muted: #c1c6c9;
+    --accent: #ac2724;
+    --on-accent: #e8e8e8;
+    --heading: #c1c6c9;
   }
 }
 
@@ -29,4 +35,13 @@ body {
     'Segoe UI',
     Roboto,
     sans-serif;
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
 }
