@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { tasks } from './data/tasks';
 import { useNow } from './hooks/useNow';
 import {
   buildQueue,
@@ -10,7 +9,7 @@ import {
 } from './lib/queue';
 import { getLogicalDate } from './lib/logicalDay';
 import { getRoutineKind } from './lib/routine';
-import { loadProgress, saveProgress } from './lib/storage';
+import { loadProgress, loadTasks, saveProgress } from './lib/storage';
 import { ActionButtons } from './components/ActionButtons';
 import { AllDone } from './components/AllDone';
 import { CurrentTask } from './components/CurrentTask';
@@ -22,6 +21,7 @@ export default function App() {
   const date = getLogicalDate(now);
   const routine = getRoutineKind(now);
 
+  const [tasks] = useState(loadTasks);
   const [saved, setSaved] = useState(() => ({ date, value: loadProgress(date) }));
   // A new logical date has no saved progress, so marks reset at 06:00.
   const progress = saved.date === date ? saved.value : loadProgress(date);
