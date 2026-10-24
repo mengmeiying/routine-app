@@ -2,6 +2,7 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import { saveTasks } from './lib/storage';
 
 // Local-time constructor keeps tests independent of the machine's timezone.
 const at = (d: number, h: number, min = 0) => new Date(2026, 9, d, h, min);
@@ -21,6 +22,19 @@ afterEach(() => {
 });
 
 describe('App', () => {
+  it('uses the saved task list instead of the starter one', () => {
+    saveTasks([
+      { id: 'x', title: 'Своё первое', routine: 'morning', required: false },
+      { id: 'y', title: 'Своё второе', routine: 'morning', required: false },
+    ]);
+    vi.setSystemTime(at(21, 7));
+    render(<App />);
+
+    expect(screen.getByText('Своё первое', { selector: 'p' })).toBeInTheDocument();
+    expect(screen.getByText('1 из 2')).toBeInTheDocument();
+    expect(screen.queryByText('Стакан воды')).not.toBeInTheDocument();
+  });
+
   it('shows the first morning task and moves on after "Готово"', async () => {
     vi.setSystemTime(at(21, 7));
     render(<App />);
