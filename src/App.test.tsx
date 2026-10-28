@@ -118,8 +118,11 @@ describe('App list editing', () => {
     await goBack();
     await screen.findByRole('heading', { name: 'Утро' });
   };
+  const openRow = (title: string) =>
+    userEvent.click(screen.getByRole('button', { name: new RegExp(`^${title}`) }));
   const confirmDelete = async (title: string) => {
-    await userEvent.click(screen.getByRole('button', { name: `Удалить «${title}»` }));
+    await openRow(title);
+    await userEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     await userEvent.click(screen.getByRole('button', { name: 'Удалить' }));
   };
 
@@ -157,7 +160,8 @@ describe('App list editing', () => {
     render(<App />);
 
     await openEditor();
-    await userEvent.click(screen.getByRole('button', { name: 'Изменить «Первое»' }));
+    await openRow('Первое');
+    await userEvent.click(screen.getByRole('button', { name: 'Изменить' }));
     const field = screen.getByRole('textbox', { name: 'Название дела' });
     await userEvent.clear(field);
     await userEvent.type(field, 'Главное{Enter}');
@@ -214,6 +218,87 @@ describe('App list editing', () => {
       await screen.findByRole('heading', { name: 'Дел пока нет' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Добавь дела в редакторе')).toBeInTheDocument();
+  });
+});
+
+describe('App reordering', () => {
+  const list = [
+    { id: 'a', title: 'Первое', routine: 'morning', required: false },
+    { id: 'b', title: 'Второе', routine: 'morning', required: false },
+    { id: 'c', title: 'Третье', routine: 'morning', required: false },
+  ] as const;
+
+  const openRow = (title: string) =>
+    userEvent.click(screen.getByRole('button', { name: new RegExp(`^${title}`) }));
+  const move = (name: 'Выше' | 'Ниже') =>
+    userEvent.click(screen.getByRole('button', { name }));
+  const backToRoutine = async () => {
+    await goBack();
+    await screen.findByRole('heading', { name: 'Утро' });
+  };
+  const upcoming = () => screen.getAllByRole('listitem').map((li) => li.textContent);
+
+  beforeEach(() => {
+    saveTasks([...list]);
+    vi.setSystemTime(at(21, 7));
+  });
+
+  it('changes the current task and the queue order', async () => {
+    render(<App />);
+    expect(screen.getByText('Первое', { selector: 'p' })).toBeInTheDocument();
+
+    await openEditor();
+    await openRow('Третье');
+    await move('Выше');
+    await move('Выше');
+    await backToRoutine();
+
+    expect(screen.getByText('Третье', { selector: 'p' })).toBeInTheDocument();
+    expect(upcoming()).toEqual(['Первое', 'Второе']);
+  });
+
+  it('keeps the new order after a restart', async () => {
+    const { unmount } = render(<App />);
+
+    await openEditor();
+    await openRow('Первое');
+    await move('Ниже');
+    await backToRoutine();
+    unmount();
+
+    render(<App />);
+    expect(screen.getByText('Второе', { selector: 'p' })).toBeInTheDocument();
+    expect(upcoming()).toEqual(['Первое', 'Третье']);
+  });
+
+  it('keeps done tasks done after reordering', async () => {
+    render(<App />);
+    await done();
+    expect(screen.getByText('Второе', { selector: 'p' })).toBeInTheDocument();
+
+    await openEditor();
+    await openRow('Третье');
+    await move('Выше');
+    await move('Выше');
+    await backToRoutine();
+
+    expect(screen.getByText('Третье', { selector: 'p' })).toBeInTheDocument();
+    expect(upcoming()).toEqual(['Второе']);
+    expect(screen.getByText('2 из 3')).toBeInTheDocument();
+  });
+
+  it('leaves a task postponed today at the end of the queue', async () => {
+    render(<App />);
+    await later();
+    expect(screen.getByText('Второе', { selector: 'p' })).toBeInTheDocument();
+
+    await openEditor();
+    await openRow('Первое');
+    await move('Ниже');
+    await backToRoutine();
+
+    expect(screen.getByText('Второе', { selector: 'p' })).toBeInTheDocument();
+    expect(upcoming()).toEqual(['Третье', 'Первое']);
   });
 });
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Task } from '../data/tasks';
 import type { RoutineKind } from '../lib/routine';
-import { addTask, createTaskId, removeTask, renameTask } from '../lib/taskList';
+import { addTask, createTaskId, moveTask, removeTask, renameTask } from '../lib/taskList';
 import { AddTaskForm } from './AddTaskForm';
 import { TaskRow, type RowMode } from './TaskRow';
 import styles from './Editor.module.css';
@@ -13,8 +13,8 @@ type Props = {
   onChange: (tasks: Task[]) => void;
 };
 
-// Only one action is open at a time.
-type Action = { kind: 'rename' | 'delete'; id: string } | { kind: 'add' } | null;
+// Only one action is open at a time. "open" is a row with its toolbar shown.
+type Action = { kind: 'open' | 'rename' | 'delete'; id: string } | { kind: 'add' } | null;
 
 const TABS: { kind: RoutineKind; label: string }[] = [
   { kind: 'morning', label: 'Утро' },
@@ -62,11 +62,20 @@ export function Editor({ tasks, initialRoutine, onBack, onChange }: Props) {
           <p className={styles.empty}>Дел пока нет</p>
         ) : (
           <ol className={styles.list}>
-            {list.map((task) => (
+            {list.map((task, index) => (
               <li key={task.id} className={styles.item}>
                 <TaskRow
                   task={task}
                   mode={modeOf(task.id)}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < list.length - 1}
+                  onToggle={() =>
+                    setAction(
+                      modeOf(task.id) === 'open' ? null : { kind: 'open', id: task.id },
+                    )
+                  }
+                  // The row stays open so the task can be moved several times in a row.
+                  onMove={(direction) => onChange(moveTask(tasks, task.id, direction))}
                   onStartRename={() => setAction({ kind: 'rename', id: task.id })}
                   onStartDelete={() => setAction({ kind: 'delete', id: task.id })}
                   onRename={(title) => {

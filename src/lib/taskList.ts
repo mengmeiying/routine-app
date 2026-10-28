@@ -38,3 +38,24 @@ export function renameTask(tasks: Task[], id: string, rawTitle: string): Task[] 
 export function removeTask(tasks: Task[], id: string): Task[] {
   return tasks.filter((t) => t.id !== id);
 }
+
+export type MoveDirection = 'up' | 'down';
+
+// Swaps the task with its nearest neighbour of the same routine. Tasks of the other
+// routine in between are skipped, so a task never crosses to the other routine.
+export function moveTask(tasks: Task[], id: string, direction: MoveDirection): Task[] {
+  const index = tasks.findIndex((t) => t.id === id);
+  if (index === -1) return tasks;
+
+  const step = direction === 'up' ? -1 : 1;
+  const { routine } = tasks[index];
+  let neighbour = index + step;
+  while (tasks[neighbour] !== undefined && tasks[neighbour].routine !== routine) {
+    neighbour += step;
+  }
+  if (tasks[neighbour] === undefined) return tasks;
+
+  const next = [...tasks];
+  [next[index], next[neighbour]] = [next[neighbour], next[index]];
+  return next;
+}

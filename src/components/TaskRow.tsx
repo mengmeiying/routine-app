@@ -1,14 +1,20 @@
 import { useState } from 'react';
 import type { Task } from '../data/tasks';
-import { MAX_TITLE_LENGTH, normalizeTitle } from '../lib/taskList';
+import { MAX_TITLE_LENGTH, normalizeTitle, type MoveDirection } from '../lib/taskList';
+import { ArrowDownIcon, ArrowUpIcon, ChevronIcon, PencilIcon, TrashIcon } from './icons';
 import form from './Form.module.css';
 import styles from './TaskRow.module.css';
 
-export type RowMode = 'view' | 'rename' | 'delete';
+// 'open' is the collapsed row with its toolbar shown.
+export type RowMode = 'view' | 'open' | 'rename' | 'delete';
 
 type Props = {
   task: Task;
   mode: RowMode;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onToggle: () => void;
+  onMove: (direction: MoveDirection) => void;
   onStartRename: () => void;
   onStartDelete: () => void;
   onRename: (title: string) => void;
@@ -58,6 +64,10 @@ function RenameForm({
 export function TaskRow({
   task,
   mode,
+  canMoveUp,
+  canMoveDown,
+  onToggle,
+  onMove,
   onStartRename,
   onStartDelete,
   onRename,
@@ -85,48 +95,51 @@ export function TaskRow({
   }
 
   const off = task.enabled === false;
+  const open = mode === 'open';
   return (
-    <div className={styles.row}>
-      <span className={off ? styles.titleOff : styles.title}>{task.title}</span>
-      {off && <span className={styles.badge}>выключено</span>}
+    <div>
       <button
         type="button"
-        className={styles.icon}
-        aria-label={`Изменить «${task.title}»`}
-        onClick={onStartRename}
+        className={styles.header}
+        aria-expanded={open}
+        onClick={onToggle}
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="24"
-          height="24"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path
-            fill="currentColor"
-            d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-          />
-        </svg>
+        <span className={off ? styles.titleOff : styles.title}>{task.title}</span>
+        {off && <span className={styles.badge}>выключено</span>}
+        <span className={open ? styles.chevronOpen : styles.chevron}>
+          <ChevronIcon />
+        </span>
       </button>
-      <button
-        type="button"
-        className={styles.icon}
-        aria-label={`Удалить «${task.title}»`}
-        onClick={onStartDelete}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="24"
-          height="24"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path
-            fill="currentColor"
-            d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
-          />
-        </svg>
-      </button>
+      {open && (
+        <div className={styles.toolbar}>
+          <button
+            type="button"
+            className={styles.action}
+            disabled={!canMoveUp}
+            onClick={() => onMove('up')}
+          >
+            <ArrowUpIcon />
+            Выше
+          </button>
+          <button
+            type="button"
+            className={styles.action}
+            disabled={!canMoveDown}
+            onClick={() => onMove('down')}
+          >
+            <ArrowDownIcon />
+            Ниже
+          </button>
+          <button type="button" className={styles.action} onClick={onStartRename}>
+            <PencilIcon />
+            Изменить
+          </button>
+          <button type="button" className={styles.action} onClick={onStartDelete}>
+            <TrashIcon />
+            Удалить
+          </button>
+        </div>
+      )}
     </div>
   );
 }

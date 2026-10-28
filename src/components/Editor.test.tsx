@@ -12,7 +12,17 @@ const tasks: Task[] = [
   { id: 'e2', title: 'Evening two', routine: 'evening', required: true },
 ];
 
-const titles = () => screen.getAllByRole('listitem').map((li) => li.textContent);
+// Reads the title of every row, whether or not its toolbar is open.
+const titles = () =>
+  screen.getAllByRole('listitem').map((li) => li.querySelector('span')!.textContent);
+
+const ids = (list: Task[]) => list.map((t) => t.id);
+const lastChange = (onChange: ReturnType<typeof vi.fn>): Task[] =>
+  onChange.mock.lastCall![0];
+
+const openRow = (title: string) =>
+  userEvent.click(screen.getByRole('button', { name: new RegExp(`^${title}`) }));
+const tool = (name: string) => screen.getByRole('button', { name });
 
 // Keeps the list in state like App does, and reports every change.
 function Harness({
@@ -60,7 +70,7 @@ describe('Editor view', () => {
       'aria-selected',
       'true',
     );
-    expect(titles()[0]).toContain('Morning one');
+    expect(titles()[0]).toBe('Morning one');
     expect(screen.queryByText('Evening one')).not.toBeInTheDocument();
   });
 
@@ -91,6 +101,127 @@ describe('Editor view', () => {
   });
 });
 
+describe('Editor: row toolbar', () => {
+  it('opens on tap, closes on a second tap', async () => {
+    render(<Harness />);
+    expect(screen.queryByRole('button', { name: 'Выше' })).not.toBeInTheDocument();
+
+    await openRow('Morning one');
+    expect(screen.getByRole('button', { name: /^Morning one/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    for (const name of ['Выше', 'Ниже', 'Изменить', 'Удалить']) {
+      expect(tool(name)).toBeInTheDocument();
+    }
+
+    await openRow('Morning one');
+    expect(screen.queryByRole('button', { name: 'Выше' })).not.toBeInTheDocument();
+  });
+
+  it('keeps only one row open', async () => {
+    render(<Harness />);
+
+    await openRow('Morning one');
+    await openRow('Morning two');
+
+    expect(screen.getAllByRole('button', { name: 'Выше' })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /^Morning one/ })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('closes when the routine tab changes', async () => {
+    render(<Harness />);
+
+    await openRow('Morning one');
+    await userEvent.click(screen.getByRole('tab', { name: 'Вечер' }));
+    await userEvent.click(screen.getByRole('tab', { name: 'Утро' }));
+
+    expect(screen.queryByRole('button', { name: 'Выше' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Editor: reordering', () => {
+  const three: Task[] = [
+    { id: 'a', title: 'First', routine: 'morning', required: false },
+    { id: 'x', title: 'Evening', routine: 'evening', required: false },
+    { id: 'b', title: 'Second', routine: 'morning', required: false },
+    { id: 'c', title: 'Third', routine: 'morning', required: false },
+  ];
+
+  it('moves a task up and reports the new order', async () => {
+    const onChange = vi.fn();
+    render(<Harness initial={three} onChange={onChange} />);
+
+    await openRow('Second');
+    await userEvent.click(tool('Выше'));
+
+    expect(titles()).toEqual(['Second', 'First', 'Third']);
+    expect(ids(lastChange(onChange))).toEqual(['b', 'x', 'a', 'c']);
+  });
+
+  it('moves a task down', async () => {
+    render(<Harness initial={three} />);
+
+    await openRow('First');
+    await userEvent.click(tool('Ниже'));
+
+    expect(titles()).toEqual(['Second', 'First', 'Third']);
+  });
+
+  it('keeps the row open and follows the task through repeated moves', async () => {
+    render(<Harness initial={three} />);
+
+    await openRow('First');
+    await userEvent.click(tool('Ниже'));
+    await userEvent.click(tool('Ниже'));
+
+    expect(titles()).toEqual(['Second', 'Third', 'First']);
+    expect(screen.getByRole('button', { name: /^First/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(tool('Ниже')).toBeDisabled();
+    expect(tool('Выше')).toBeEnabled();
+  });
+
+  it('disables "Выше" for the first task and "Ниже" for the last', async () => {
+    render(<Harness initial={three} />);
+
+    await openRow('First');
+    expect(tool('Выше')).toBeDisabled();
+    expect(tool('Ниже')).toBeEnabled();
+
+    await openRow('Third');
+    expect(tool('Выше')).toBeEnabled();
+    expect(tool('Ниже')).toBeDisabled();
+  });
+
+  it('does not touch the other routine', async () => {
+    const onChange = vi.fn();
+    render(<Harness initial={three} onChange={onChange} />);
+
+    await openRow('Third');
+    await userEvent.click(tool('Выше'));
+
+    const evening = lastChange(onChange).filter((t) => t.routine === 'evening');
+    expect(ids(evening)).toEqual(['x']);
+  });
+
+  it('can move a disabled task', async () => {
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} />);
+
+    await openRow('Morning two');
+    await userEvent.click(tool('Выше'));
+
+    expect(titles()).toEqual(['Morning two', 'Morning one']);
+    expect(lastChange(onChange).find((t) => t.id === 'm2')?.enabled).toBe(false);
+  });
+});
+
 describe('Editor: adding', () => {
   const openForm = () =>
     userEvent.click(screen.getByRole('button', { name: /Добавить дело/ }));
@@ -105,7 +236,7 @@ describe('Editor: adding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Добавить' }));
 
     expect(titles()).toEqual(['Evening one', 'Evening two', 'Новое дело']);
-    const saved: Task[] = onChange.mock.lastCall![0];
+    const saved = lastChange(onChange);
     expect(saved.at(-1)).toMatchObject({
       title: 'Новое дело',
       routine: 'evening',
@@ -123,7 +254,7 @@ describe('Editor: adding', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: 'Обязательное' }));
     await userEvent.click(screen.getByRole('button', { name: 'Добавить' }));
 
-    expect(onChange.mock.lastCall![0].at(-1)).toMatchObject({
+    expect(lastChange(onChange).at(-1)).toMatchObject({
       title: 'Важное',
       required: true,
     });
@@ -170,8 +301,10 @@ describe('Editor: adding', () => {
 });
 
 describe('Editor: renaming', () => {
-  const startRename = (title: string) =>
-    userEvent.click(screen.getByRole('button', { name: `Изменить «${title}»` }));
+  const startRename = async (title: string) => {
+    await openRow(title);
+    await userEvent.click(tool('Изменить'));
+  };
   const field = () => screen.getByRole('textbox', { name: 'Название дела' });
 
   it('renames a task and keeps its place', async () => {
@@ -185,7 +318,7 @@ describe('Editor: renaming', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
 
     expect(titles()).toEqual(['Renamed', 'Evening two']);
-    expect(onChange.mock.lastCall![0].find((t: Task) => t.id === 'e1')).toMatchObject({
+    expect(lastChange(onChange).find((t) => t.id === 'e1')).toMatchObject({
       title: 'Renamed',
       routine: 'evening',
       required: false,
@@ -211,7 +344,7 @@ describe('Editor: renaming', () => {
     await startRename('Morning one');
     await userEvent.type(field(), ' edited');
     await userEvent.click(screen.getByRole('button', { name: 'Отмена' }));
-    expect(titles()[0]).toContain('Morning one');
+    expect(titles()[0]).toBe('Morning one');
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 
     await startRename('Morning one');
@@ -228,7 +361,7 @@ describe('Editor: renaming', () => {
     await startRename('Morning two');
     await userEvent.type(field(), '!{Enter}');
 
-    expect(onChange.mock.lastCall![0].find((t: Task) => t.id === 'm2')).toMatchObject({
+    expect(lastChange(onChange).find((t) => t.id === 'm2')).toMatchObject({
       title: 'Morning two!',
       enabled: false,
     });
@@ -250,8 +383,10 @@ describe('Editor: renaming', () => {
 });
 
 describe('Editor: deleting', () => {
-  const startDelete = (title: string) =>
-    userEvent.click(screen.getByRole('button', { name: `Удалить «${title}»` }));
+  const startDelete = async (title: string) => {
+    await openRow(title);
+    await userEvent.click(tool('Удалить'));
+  };
 
   it('asks first and deletes only after confirmation', async () => {
     const onChange = vi.fn();
@@ -264,7 +399,7 @@ describe('Editor: deleting', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Удалить' }));
 
     expect(titles()).toEqual(['Evening two']);
-    expect(onChange.mock.lastCall![0].map((t: Task) => t.id)).toEqual(['m1', 'm2', 'e2']);
+    expect(ids(lastChange(onChange))).toEqual(['m1', 'm2', 'e2']);
   });
 
   it('keeps the task when the confirmation is cancelled', async () => {
