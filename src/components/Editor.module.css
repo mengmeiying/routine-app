@@ -1,0 +1,101 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 20px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back {
+  min-height: 48px;
+  padding: 0 12px;
+  margin-left: -12px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.back:active {
+  background: var(--surface);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--heading);
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 4px;
+  background: var(--surface);
+  border-radius: 14px;
+}
+
+.tab {
+  min-height: 48px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab[aria-selected='true'] {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.list {
+  margin: 0;
+  padding-left: 28px;
+}
+
+.item,
+.itemOff {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--surface);
+  font-size: 1.125rem;
+}
+
+.item::marker,
+.itemOff::marker {
+  color: var(--text-muted);
+}
+
+.itemOff {
+  color: var(--text-muted);
+}
+
+.itemOff span:first-child {
+  text-decoration: line-through;
+}
+
+.badge {
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.empty {
+  margin: 24px 0;
+  text-align: center;
+  color: var(--text-muted);
+}

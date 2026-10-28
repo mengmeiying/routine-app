@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
@@ -11,14 +11,101 @@ const done = () => userEvent.click(screen.getByRole('button', { name: 'Гото�
 const later = () => userEvent.click(screen.getByRole('button', { name: 'Сделаю позже' }));
 const advance = (ms: number) => act(() => vi.advanceTimersByTime(ms));
 
+const openEditor = () =>
+  userEvent.click(screen.getByRole('button', { name: 'Редактор списка' }));
+const goBack = () => userEvent.click(screen.getByRole('button', { name: '← Назад' }));
+
 beforeEach(() => {
   localStorage.clear();
+  window.history.replaceState(null, '', '/');
   // Only the clock and intervals are faked, so user-event keeps working.
   vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
 });
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe('App editor', () => {
+  const list = [
+    { id: 'a', title: 'Первое', routine: 'morning', required: true },
+    { id: 'b', title: 'Второе', routine: 'morning', required: false },
+    { id: 'c', title: 'Вечернее', routine: 'evening', required: false },
+  ] as const;
+
+  beforeEach(() => {
+    saveTasks([...list]);
+    vi.setSystemTime(at(21, 7));
+  });
+
+  it('opens from the gear and returns with the back button', async () => {
+    render(<App />);
+
+    await openEditor();
+    expect(screen.getByRole('heading', { name: 'Список дел' })).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Первое',
+      'Второе',
+    ]);
+
+    await goBack();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('heading', { name: 'Список дел' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole('heading', { name: 'Утро' })).toBeInTheDocument();
+  });
+
+  it('closes on the system back gesture', async () => {
+    render(<App />);
+    await openEditor();
+    expect(window.location.hash).toBe('#editor');
+
+    act(() => window.history.back());
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('heading', { name: 'Список дел' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(window.location.hash).toBe('');
+  });
+
+  it('opens straight from #editor and closes without leaving the app', async () => {
+    window.history.replaceState(null, '', '/#editor');
+    render(<App />);
+    expect(screen.getByRole('heading', { name: 'Список дел' })).toBeInTheDocument();
+
+    await goBack();
+
+    expect(screen.getByRole('heading', { name: 'Утро' })).toBeInTheDocument();
+    expect(window.location.hash).toBe('');
+  });
+
+  it('is reachable from the "all done" screen', async () => {
+    saveTasks([list[0]]);
+    render(<App />);
+    await done();
+    expect(screen.getByRole('heading', { name: 'Всё готово' })).toBeInTheDocument();
+
+    await openEditor();
+
+    expect(screen.getByRole('heading', { name: 'Список дел' })).toBeInTheDocument();
+  });
+
+  it("keeps today's marks after visiting the editor", async () => {
+    render(<App />);
+    await done();
+    expect(screen.getByText('Второе', { selector: 'p' })).toBeInTheDocument();
+
+    await openEditor();
+    await goBack();
+
+    await waitFor(() =>
+      expect(screen.getByText('Второе', { selector: 'p' })).toBeInTheDocument(),
+    );
+  });
 });
 
 describe('App', () => {

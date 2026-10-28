@@ -6,8 +6,10 @@
 
 .header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  /* Pulls the 48px button's padding back to the screen edge. */
+  margin-right: -12px;
 }
 
 .routine {
@@ -15,6 +17,12 @@
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--heading);
+}
+
+.side {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .counter {

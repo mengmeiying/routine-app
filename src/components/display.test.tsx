@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import type { Task } from '../data/tasks';
 import { AllDone } from './AllDone';
 import { CurrentTask } from './CurrentTask';
@@ -15,12 +16,35 @@ const task = (id: string, title: string): Task => ({
 describe('CurrentTask', () => {
   it('shows the routine, the task and the position', () => {
     render(
-      <CurrentTask routineTitle="Утро" task={task('a', 'Душ')} position={2} total={7} />,
+      <CurrentTask
+        routineTitle="Утро"
+        task={task('a', 'Душ')}
+        position={2}
+        total={7}
+        onOpenEditor={vi.fn()}
+      />,
     );
 
     expect(screen.getByRole('heading', { name: 'Утро' })).toBeInTheDocument();
     expect(screen.getByText('Душ')).toBeInTheDocument();
     expect(screen.getByText('2 из 7')).toBeInTheDocument();
+  });
+
+  it('opens the editor from the gear button', async () => {
+    const onOpenEditor = vi.fn();
+    render(
+      <CurrentTask
+        routineTitle="Утро"
+        task={task('a', 'Душ')}
+        position={1}
+        total={1}
+        onOpenEditor={onOpenEditor}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Редактор списка' }));
+
+    expect(onOpenEditor).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -41,9 +65,18 @@ describe('UpcomingList', () => {
 
 describe('AllDone', () => {
   it('shows the completion message', () => {
-    render(<AllDone routineTitle="Вечер" />);
+    render(<AllDone routineTitle="Вечер" onOpenEditor={vi.fn()} />);
 
     expect(screen.getByRole('heading', { name: 'Всё готово' })).toBeInTheDocument();
     expect(screen.getByText('Вечер: все дела выполнены')).toBeInTheDocument();
+  });
+
+  it('opens the editor from the gear button', async () => {
+    const onOpenEditor = vi.fn();
+    render(<AllDone routineTitle="Вечер" onOpenEditor={onOpenEditor} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Редактор списка' }));
+
+    expect(onOpenEditor).toHaveBeenCalledTimes(1);
   });
 });

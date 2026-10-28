@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useEditorOpen } from './hooks/useEditorOpen';
 import { useNow } from './hooks/useNow';
 import {
   buildQueue,
@@ -13,6 +14,7 @@ import { loadProgress, loadTasks, saveProgress } from './lib/storage';
 import { ActionButtons } from './components/ActionButtons';
 import { AllDone } from './components/AllDone';
 import { CurrentTask } from './components/CurrentTask';
+import { Editor } from './components/Editor';
 import { UpcomingList } from './components/UpcomingList';
 import styles from './App.module.css';
 
@@ -21,6 +23,7 @@ export default function App() {
   const date = getLogicalDate(now);
   const routine = getRoutineKind(now);
 
+  const { open: editorOpen, openEditor, closeEditor } = useEditorOpen();
   const [tasks] = useState(loadTasks);
   const [saved, setSaved] = useState(() => ({ date, value: loadProgress(date) }));
   // A new logical date has no saved progress, so marks reset at 06:00.
@@ -36,10 +39,18 @@ export default function App() {
     setSaved({ date, value: next });
   };
 
+  if (editorOpen) {
+    return (
+      <main className={styles.page}>
+        <Editor tasks={tasks} initialRoutine={routine} onBack={closeEditor} />
+      </main>
+    );
+  }
+
   if (!current) {
     return (
       <main className={styles.page}>
-        <AllDone routineTitle={title} />
+        <AllDone routineTitle={title} onOpenEditor={openEditor} />
       </main>
     );
   }
@@ -51,6 +62,7 @@ export default function App() {
         task={current}
         position={total - queue.length + 1}
         total={total}
+        onOpenEditor={openEditor}
       />
       <UpcomingList tasks={queue.slice(1)} />
       <ActionButtons
