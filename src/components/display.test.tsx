@@ -71,6 +71,14 @@ describe('AllDone', () => {
     expect(screen.getByText('Вечер: все дела выполнены')).toBeInTheDocument();
   });
 
+  it('asks to add tasks instead of claiming completion when the routine is empty', () => {
+    render(<AllDone routineTitle="Вечер" empty onOpenEditor={vi.fn()} />);
+
+    expect(screen.getByRole('heading', { name: 'Дел пока нет' })).toBeInTheDocument();
+    expect(screen.getByText('Добавь дела в редакторе')).toBeInTheDocument();
+    expect(screen.queryByText('Всё готово')).not.toBeInTheDocument();
+  });
+
   it('opens the editor from the gear button', async () => {
     const onOpenEditor = vi.fn();
     render(<AllDone routineTitle="Вечер" onOpenEditor={onOpenEditor} />);

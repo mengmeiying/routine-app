@@ -1,0 +1,50 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.title,
+.titleOff {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.titleOff {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.badge {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+.icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.icon:active {
+  background: var(--surface);
+}
+
+.question {
+  margin: 0;
+  font-size: 1.125rem;
+  overflow-wrap: anywhere;
+}

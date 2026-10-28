@@ -65,37 +65,39 @@
   padding-left: 28px;
 }
 
-.item,
-.itemOff {
-  padding: 14px 0;
+.item {
+  padding: 8px 0;
   border-bottom: 1px solid var(--surface);
   font-size: 1.125rem;
 }
 
-.item::marker,
-.itemOff::marker {
+.item::marker {
   color: var(--text-muted);
-}
-
-.itemOff {
-  color: var(--text-muted);
-}
-
-.itemOff span:first-child {
-  text-decoration: line-through;
-}
-
-.badge {
-  margin-left: 10px;
-  padding: 2px 8px;
-  border-radius: 8px;
-  background: var(--surface);
-  font-size: 0.8125rem;
-  text-decoration: none;
 }
 
 .empty {
   margin: 24px 0;
   text-align: center;
   color: var(--text-muted);
+}
+
+.add {
+  margin-top: 16px;
+}
+
+.addButton {
+  width: 100%;
+  min-height: 56px;
+  margin-top: 16px;
+  border: 2px dashed var(--surface);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.addButton:active {
+  background: var(--surface);
 }

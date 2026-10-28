@@ -108,6 +108,115 @@ describe('App editor', () => {
   });
 });
 
+describe('App list editing', () => {
+  const list = [
+    { id: 'a', title: 'Первое', routine: 'morning', required: true },
+    { id: 'b', title: 'Второе', routine: 'morning', required: false },
+  ] as const;
+
+  const backToRoutine = async () => {
+    await goBack();
+    await screen.findByRole('heading', { name: 'Утро' });
+  };
+  const confirmDelete = async (title: string) => {
+    await userEvent.click(screen.getByRole('button', { name: `Удалить «${title}»` }));
+    await userEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+  };
+
+  beforeEach(() => {
+    saveTasks([...list]);
+    vi.setSystemTime(at(21, 7));
+  });
+
+  it('puts an added task into the queue and keeps it after a restart', async () => {
+    const { unmount } = render(<App />);
+
+    await openEditor();
+    await userEvent.click(screen.getByRole('button', { name: /Добавить дело/ }));
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Название нового дела' }),
+      'Новое{Enter}',
+    );
+    await backToRoutine();
+
+    expect(screen.getByText('1 из 3')).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Второе',
+      'Новое',
+    ]);
+
+    unmount();
+    render(<App />);
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Второе',
+      'Новое',
+    ]);
+  });
+
+  it('shows a renamed task right away', async () => {
+    render(<App />);
+
+    await openEditor();
+    await userEvent.click(screen.getByRole('button', { name: 'Изменить «Первое»' }));
+    const field = screen.getByRole('textbox', { name: 'Название дела' });
+    await userEvent.clear(field);
+    await userEvent.type(field, 'Главное{Enter}');
+    await backToRoutine();
+
+    expect(screen.getByText('Главное', { selector: 'p' })).toBeInTheDocument();
+  });
+
+  it('moves on to the next task when the current one is deleted', async () => {
+    render(<App />);
+
+    await openEditor();
+    await confirmDelete('Первое');
+    await backToRoutine();
+
+    expect(screen.getByText('Второе', { selector: 'p' })).toBeInTheDocument();
+    expect(screen.getByText('1 из 1')).toBeInTheDocument();
+  });
+
+  it('keeps the history of a deleted task', async () => {
+    render(<App />);
+    await done();
+
+    await openEditor();
+    await confirmDelete('Первое');
+    await backToRoutine();
+
+    const history = JSON.parse(localStorage.getItem('routine-app:history')!);
+    expect(history['2026-10-21'].done).toEqual(['a']);
+    expect(screen.getByText('Второе', { selector: 'p' })).toBeInTheDocument();
+    expect(screen.getByText('1 из 1')).toBeInTheDocument();
+  });
+
+  it('saves the edited list with a format version', async () => {
+    render(<App />);
+
+    await openEditor();
+    await confirmDelete('Второе');
+
+    const stored = JSON.parse(localStorage.getItem('routine-app:tasks')!);
+    expect(stored.version).toBe(1);
+    expect(stored.tasks.map((t: { id: string }) => t.id)).toEqual(['a']);
+  });
+
+  it('asks to add tasks when the routine becomes empty', async () => {
+    render(<App />);
+
+    await openEditor();
+    await confirmDelete('Первое');
+    await confirmDelete('Второе');
+    await goBack();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Дел пока нет' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Добавь дела в редакторе')).toBeInTheDocument();
+  });
+});
+
 describe('App', () => {
   it('uses the saved task list instead of the starter one', () => {
     saveTasks([

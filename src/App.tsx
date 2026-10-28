@@ -10,7 +10,8 @@ import {
 } from './lib/queue';
 import { getLogicalDate } from './lib/logicalDay';
 import { getRoutineKind } from './lib/routine';
-import { loadProgress, loadTasks, saveProgress } from './lib/storage';
+import type { Task } from './data/tasks';
+import { loadProgress, loadTasks, saveProgress, saveTasks } from './lib/storage';
 import { ActionButtons } from './components/ActionButtons';
 import { AllDone } from './components/AllDone';
 import { CurrentTask } from './components/CurrentTask';
@@ -24,7 +25,7 @@ export default function App() {
   const routine = getRoutineKind(now);
 
   const { open: editorOpen, openEditor, closeEditor } = useEditorOpen();
-  const [tasks] = useState(loadTasks);
+  const [tasks, setTasks] = useState(loadTasks);
   const [saved, setSaved] = useState(() => ({ date, value: loadProgress(date) }));
   // A new logical date has no saved progress, so marks reset at 06:00.
   const progress = saved.date === date ? saved.value : loadProgress(date);
@@ -39,10 +40,20 @@ export default function App() {
     setSaved({ date, value: next });
   };
 
+  const changeTasks = (next: Task[]) => {
+    saveTasks(next);
+    setTasks(next);
+  };
+
   if (editorOpen) {
     return (
       <main className={styles.page}>
-        <Editor tasks={tasks} initialRoutine={routine} onBack={closeEditor} />
+        <Editor
+          tasks={tasks}
+          initialRoutine={routine}
+          onBack={closeEditor}
+          onChange={changeTasks}
+        />
       </main>
     );
   }
@@ -50,7 +61,7 @@ export default function App() {
   if (!current) {
     return (
       <main className={styles.page}>
-        <AllDone routineTitle={title} onOpenEditor={openEditor} />
+        <AllDone routineTitle={title} empty={total === 0} onOpenEditor={openEditor} />
       </main>
     );
   }

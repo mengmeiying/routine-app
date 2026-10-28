@@ -1,0 +1,69 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 2px solid var(--surface);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1.125rem;
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  font-size: 1.0625rem;
+  cursor: pointer;
+}
+
+.check input {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--accent);
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.primary,
+.secondary {
+  min-height: 52px;
+  border-radius: 12px;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary {
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.secondary {
+  border: 2px solid var(--surface);
+  background: transparent;
+  color: var(--text);
+}
